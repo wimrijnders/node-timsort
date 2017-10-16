@@ -17,6 +17,22 @@ var PrettyPrinter = function() {
   this.str = '';
 };
 
+
+/**
+ * @returns {number} time measure  in nanoseconds.
+ */
+function perfTime() {
+  if (typeof performance !== 'undefined') {
+    return performance.now() * 1000000;  // now() returns milliseconds
+  } else if (process.hrtime !== undefined) {
+    var start = process.hrtime();
+    return start[0] * 1000000000 + start[1];
+  } else {
+    return Date.now() * 1000000;  // now() returns milliseconds
+  }
+}
+
+
 PrettyPrinter.prototype.addAt = function(value, at) {
   while (at > this.str.length) {
     this.str += ' ';
@@ -58,28 +74,27 @@ for (var generatorName in ArrayGenerator) {
         var arr1 = generator(length);
         var arr2 = arr1.slice();
 
-        var start = process.hrtime();
+        var start = perfTime();
         arr1.sort(numberCompare);
-        var stop = process.hrtime();
 
-        var startNano = start[0] * 1000000000 + start[1];
-        var stopNano = stop[0] * 1000000000 + stop[1];
-        defaultTime += stopNano - startNano;
+        var stop = perfTime();
+        defaultTime += stop - start;
 
-        start = process.hrtime();
+        start = perfTime();
         TimSort.sort(arr2, numberCompare);
-        stop = process.hrtime();
+        stop = perfTime();
 
-        startNano = start[0] * 1000000000 + start[1];
-        stopNano = stop[0] * 1000000000 + stop[1];
-        timsortTime += stopNano - startNano;
-
+        timsortTime += stop - start;
       }
 
+      var lastGeneratorName;
       defaultResults[generatorName][length] = defaultTime/repetitions;
       timsortResults[generatorName][length] = timsortTime/repetitions;
       printer = new PrettyPrinter();
-      printer.addAt(generatorName, 0);
+      if (lastGeneratorName !== generatorName) {
+        printer.addAt(generatorName, 0);
+        lastGeneratorName = generatorName;
+      }
       printer.addAt(length, 30);
       printer.addAt(parseInt(timsortResults[generatorName][length]), 37);
       printer.addAt(parseInt(defaultResults[generatorName][length]), 47);
